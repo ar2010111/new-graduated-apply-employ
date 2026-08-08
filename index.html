@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة إدارة شئون الخريجين</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+/* ══════════════════════ VARIABLES ══════════════════════ */
+:root{
+  --pr:#0a3d6b;--pr2:#1565a8;--ac:#00b4d8;--gold:#e9c46a;
+  --sur:#ffffff;--card:#fff;--txt:#1a2535;--muted:#5a6a7e;
+  --bdr:#d0dbe8;--ok:#2ecc71;--err:#e74c3c;--warn:#f39c12;
+  --rad:14px;--sh:0 4px 20px rgba(10,61,107,.10);
+  --sh2:0 16px 48px rgba(10,61,107,.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cairo',sans-serif;background:var(--sur);color:var(--txt);direction:rtl;min-height:100vh;}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(135deg,var(--pr),#0d4f8c,var(--pr2));color:#fff;}
+.hdr-in{max-width:1440px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:14px;}
+.logo{width:48px;height:48px;background:linear-gradient(135deg,var(--ac),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.hdr-txt h1{font-size:1.15rem;font-weight:900;}
+.hdr-txt p{font-size:.75rem;opacity:.7;margin-top:2px;}
+.hdr-right{margin-right:auto;display:flex;align-items:center;gap:10px;}
+.badge-admin{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);padding:5px 14px;border-radius:20px;font-size:.76rem;}
+.back-link{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 14px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:.78rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
+.back-link:hover{background:rgba(255,255,255,.2);}
+
+/* ── STATS ── */
+.stats{background:var(--pr);border-top:1px solid rgba(255,255,255,.08);}
+.stats-in{max-width:1440px;margin:0 auto;padding:0 28px;display:flex;flex-wrap:wrap;}
+.st{padding:13px 24px;display:flex;align-items:center;gap:10px;border-left:1px solid rgba(255,255,255,.1);cursor:pointer;transition:background .2s;user-select:none;}
+.st:hover{background:rgba(255,255,255,.06);}
+.st.on{background:rgba(255,255,255,.11);}
+.st-num{font-size:1.35rem;font-weight:900;color:#fff;line-height:1;}
+.st-lbl{font-size:.72rem;color:rgba(255,255,255,.58);line-height:1.3;}
+.st-ico{font-size:18px;}
+
+/* ── MAIN ── */
+.main{max-width:1440px;margin:0 auto;padding:24px 28px;}
+
+/* ── TOOLBAR ── */
+.tb{background:var(--card);border-radius:var(--rad);box-shadow:var(--sh);padding:16px 20px;margin-bottom:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--bdr);}
+.srch{flex:1;min-width:220px;display:flex;align-items:center;gap:7px;background:#f5f7fa;border:1.5px solid var(--bdr);border-radius:9px;padding:8px 12px;transition:all .2s;}
+.srch:focus-within{border-color:var(--ac);background:#fff;box-shadow:0 0 0 3px rgba(0,180,216,.1);}
+.srch input{flex:1;border:none;outline:none;font-family:'Cairo',sans-serif;font-size:.88rem;background:transparent;color:var(--txt);}
+.flt{padding:8px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-family:'Cairo',sans-serif;font-size:.83rem;color:var(--txt);background:#f5f7fa;outline:none;cursor:pointer;}
+.flt:focus{border-color:var(--ac);}
+.sort-btn{padding:8px 14px;border:1.5px solid var(--bdr);border-radius:9px;font-family:'Cairo',sans-serif;font-size:.83rem;color:var(--muted);background:#f5f7fa;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;}
+.sort-btn:hover,.sort-btn.on{border-color:var(--pr);color:var(--pr);background:#fff;}
+.btn{padding:8px 18px;border:none;border-radius:9px;font-family:'Cairo',sans-serif;font-size:.83rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-pr{background:linear-gradient(135deg,var(--pr),var(--pr2));color:#fff;}
+.btn-pr:hover{opacity:.9;}
+.btn-ok{background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff;}
+.btn-warn{background:linear-gradient(135deg,#e67e22,var(--warn));color:#fff;}
+.btn-err{background:linear-gradient(135deg,#c0392b,var(--err));color:#fff;}
+.btn-out{background:transparent;border:1.5px solid var(--bdr);color:var(--muted);}
+.btn-out:hover{border-color:var(--pr);color:var(--pr);}
+.btn-sm{padding:6px 12px;font-size:.78rem;}
+.btn-xs{padding:4px 9px;font-size:.74rem;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── TABLE CARD ── */
+.tcard{background:var(--card);border-radius:var(--rad);box-shadow:var(--sh);border:1px solid var(--bdr);overflow:hidden;}
+.tcard-head{padding:14px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;}
+.tcard-title{font-weight:700;font-size:.92rem;color:var(--pr);}
+.twrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+thead th{background:var(--pr);color:#fff;padding:11px 14px;text-align:right;font-weight:600;white-space:nowrap;}
+tbody td{padding:11px 14px;border-bottom:1px solid #f0f4f8;vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(0,180,216,.03);}
+.empty-cell{text-align:center;padding:60px!important;color:var(--muted);}
+.empty-ico{font-size:44px;display:block;margin-bottom:10px;opacity:.4;}
+
+/* ── STATUS BADGES ── */
+.sb{padding:3px 11px;border-radius:20px;font-size:.72rem;font-weight:700;display:inline-block;white-space:nowrap;}
+.s-wait{background:#fff3cd;color:#856404;}
+.s-proc{background:#cce5ff;color:#004085;}
+.s-done{background:#d4edda;color:#155724;}
+.s-deli{background:#d1ecf1;color:#0c5460;}
+.s-rejc{background:#f8d7da;color:#721c24;}
+
+/* ── ACTION ICONS ── */
+.acts{display:flex;gap:5px;align-items:center;}
+.ico-btn{width:30px;height:30px;border-radius:7px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;flex-shrink:0;}
+.row-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;cursor:zoom-in;border:1px solid #e2e8f0;transition:transform .15s;display:block;margin:0 auto;}
+.row-thumb:hover{transform:scale(1.15);box-shadow:0 4px 14px rgba(0,0,0,.18);}
+.row-thumb-pdf{width:42px;height:42px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;justify-content:center;font-size:17px;margin:0 auto;text-decoration:none;}
+.row-thumb-none{color:var(--muted);font-size:.75rem;display:block;text-align:center;}
+.lightbox-ov{display:none;position:fixed;inset:0;background:rgba(10,20,30,.82);z-index:9999;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;}
+.lightbox-ov.open{display:flex;}
+.lightbox-ov img{max-width:min(90vw,900px);max-height:88vh;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.4);}
+.lightbox-close{position:absolute;top:20px;left:24px;width:40px;height:40px;border-radius:50%;border:none;background:#fff;font-size:18px;cursor:pointer;}
+.ico-btn:hover{transform:scale(1.12);}
+.ib-v{background:rgba(0,180,216,.1);color:#0096b4;}
+.ib-v:hover{background:rgba(0,180,216,.2);}
+.ib-p{background:rgba(46,204,113,.1);color:#27ae60;}
+.ib-p:hover{background:rgba(46,204,113,.2);}
+.ib-d{background:rgba(243,156,18,.1);color:#e67e22;}
+.ib-d:hover{background:rgba(243,156,18,.2);}
+.ib-dl{background:rgba(108,117,125,.1);color:#495057;}
+.ib-dl:hover{background:rgba(108,117,125,.2);}
+
+/* ── PAGINATION ── */
+.pag{display:flex;gap:5px;align-items:center;padding:13px 20px;border-top:1px solid var(--bdr);}
+.pag-info{margin-right:auto;font-size:.78rem;color:var(--muted);}
+.pn{width:32px;height:32px;border-radius:7px;border:1.5px solid var(--bdr);background:#fff;cursor:pointer;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:600;color:var(--muted);transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.pn:hover{border-color:var(--pr);color:var(--pr);}
+.pn.on{background:var(--pr);color:#fff;border-color:var(--pr);}
+.pn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ══════════════════════ MODAL ══════════════════════ */
+.ov{position:fixed;inset:0;background:rgba(10,61,107,.55);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+.ov.open{display:flex;animation:fadeIn .25s;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.mbox{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;box-shadow:var(--sh2);animation:su .28s ease;}
+@keyframes su{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mhead{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;border-bottom:2px solid var(--sur);padding-bottom:14px;}
+.mhead h3{font-size:1.05rem;font-weight:900;color:var(--pr);display:flex;align-items:center;gap:7px;}
+.mclose{width:30px;height:30px;border-radius:50%;border:none;background:var(--sur);cursor:pointer;font-size:17px;color:var(--muted);}
+.mclose:hover{background:var(--bdr);}
+.mbody{padding:20px 24px;}
+.mfoot{padding:14px 24px;border-top:2px solid var(--sur);display:flex;gap:9px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;}
+
+/* detail grid */
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+.di{background:var(--sur);border-radius:9px;padding:12px;}
+.di.full{grid-column:1/-1;}
+.di-lbl{font-size:.7rem;color:var(--muted);margin-bottom:3px;font-weight:700;}
+.di-val{font-size:.88rem;font-weight:700;}
+
+/* image box */
+.img-box{border:2px solid var(--bdr);border-radius:11px;overflow:hidden;margin-bottom:14px;background:#f8f9fa;}
+.img-box img{width:100%;max-height:340px;object-fit:contain;display:block;}
+.img-box .no-img{padding:36px;text-align:center;color:var(--muted);font-size:.83rem;}
+.img-acts{display:flex;gap:7px;padding:9px 12px;background:var(--sur);border-top:1px solid var(--bdr);}
+
+/* form elements */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fg label{font-size:.78rem;font-weight:700;color:var(--txt);}
+.fg select,.fg textarea,.fg input{padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-family:'Cairo',sans-serif;font-size:.86rem;color:var(--txt);outline:none;direction:rtl;background:#fafbfc;}
+.fg select:focus,.fg textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(0,180,216,.1);}
+.fg textarea{resize:vertical;min-height:75px;}
+
+/* status timeline */
+.timeline{display:flex;gap:0;margin-bottom:18px;border:1.5px solid var(--bdr);border-radius:11px;overflow:hidden;}
+.tl-step{flex:1;padding:10px 8px;text-align:center;font-size:.72rem;font-weight:700;color:var(--muted);border-left:1px solid var(--bdr);transition:all .3s;position:relative;}
+.tl-step:last-child{border-left:none;}
+.tl-step.done{background:#d4edda;color:#155724;}
+.tl-step.curr{background:var(--pr);color:#fff;}
+.tl-step.deli{background:#d1ecf1;color:#0c5460;}
+.tl-step .tl-date{font-size:.65rem;font-weight:400;margin-top:3px;opacity:.8;}
+
+/* ══════════════════════ PRINT ══════════════════════ */
+#printArea{display:none;}
+
+@media print {
+  body > *:not(#printArea){ display:none !important; }
+
+  @page{
+    size: A4 portrait;
+    margin: 25mm 25mm 25mm 25mm;
+  }
+
+  /* إخفاء URL والعنوان اللي بيطبعه المتصفح تلقائياً */
+  html { -webkit-print-color-adjust: exact; }
+
+  #printArea{
+    display:block !important;
+    font-family:'Cairo',sans-serif;
+    direction:rtl;
+    margin:0; padding:0; color:#000;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  /* ═══ WRAPPER — بدون إطار خارجي ═══ */
+  .cert-wrap{
+    width: 100%;
+    min-height: auto; /* A4 height minus top+bottom margins */
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-sizing: border-box;
+  }
+
+  /* ═══ TITLE ═══ */
+  .cert-title{
+    text-align:center;
+    font-size:18pt;
+    font-weight:900;
+    letter-spacing:.3px;
+    margin-bottom:8mm;
+    margin-top:41mm;
+    border:none;cert-title
+    padding-bottom:0;
+  }
+
+  .cert-title-sep{ display:none; }
+
+  /* ═══ ROWS ═══ */
+ .c-line{
+    display:flex;
+    align-items:baseline;
+    gap:2mm;
+    margin-bottom:6mm;   /* كان 6mm */
+    font-size:11pt;
+    line-height:1.3;     /* كان 1.8 */
+}
+  .c-lbl{
+    white-space:nowrap;
+    font-size:11pt;
+    font-weight:700;
+    flex-shrink:0;
+  }
+  .c-val{
+    font-size:11pt;
+    font-weight:700;
+    flex:1;
+    border:none;
+  }
+  .c-val-id{
+    font-size:11pt;
+    font-weight:700;
+    min-width:40mm;
+    border:none;
+  }
+
+  /* ═══ TWO-COLUMN ROW ═══ */
+ .c-row2{
+    display:flex;
+    gap:4mm;
+    margin-bottom:1mm;   /* كان 4mm */
+    align-items:baseline;
+}
+  .c-row2 .c-line{
+    flex:1;
+    margin-bottom:0;
+  }
+
+  /* ═══ DEGREE LINE ═══ */
+  .c-degree{
+    font-size:10pt;
+    font-weight:700;
+    margin-bottom:6mm;
+    margin-top:4mm;
+    line-height:2;
+    text-align:center;
+  }
+
+  /* ═══ NOTE ═══ */
+  .c-note{
+    font-size:11pt;
+    margin-top:8mm;
+    padding-top:0;
+    line-height:1.8;
+    border:none;
+    color:#000;
+    text-align:center;
+    font-style:italic;
+  }
+
+  /* ═══ SIGNATURES ═══ */
+  .c-sigs{
+    margin-top:14mm;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    text-align:center;
+    font-size:10pt;
+    font-weight:700;
+    line-height:1.8;
+    gap:10px;
+  }
+  .c-sig{ display:inline; }
+  .c-sig-name{ display:inline; font-size:10.5pt; font-weight:700; }
+  .c-sig-sub{ display:none; }
+  .c-sig-endorse{ display:none; }
+  .c-sig-sep{ display:inline; margin:0 3mm; }
+
+  /* ═══ TRAVEL SIGS ═══ */
+  .c-travel-row{
+    text-align:center;
+    font-size:9.5pt;
+    font-weight:700;
+    margin-top:3mm;
+    line-height:2;
+  }
+  .c-travel-inline{ display:inline; }
+  .c-travel-sep{ display:inline; margin:0 3mm; }
+
+  /* ═══ TRAVEL — الخط المرقط فقط ═══ */
+  .c-travel{
+    margin-top:12mm;
+    padding-top:6mm;
+    border-top:2px dashed #000;
+    border-left:none;
+    border-right:none;
+    border-bottom:none;
+  }
+  .c-travel-title{
+    font-size:12pt;
+    font-weight:900;
+    text-align:center;
+    margin-bottom:4mm;
+    text-decoration:underline;
+  }
+  .c-travel-sigs{ display:none; }
+  .c-travel-sig{ display:none; }
+  .c-travel-sig-name{ display:none; }
+  .c-travel-sig-sub{ display:none; }
+  .c-travel-endorse{ display:none; }
+}
+
+/* ══════════════════════ UTILS ══════════════════════ */
+.spin{width:17px;height:17px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite;display:inline-block;}
+@keyframes rot{to{transform:rotate(360deg)}}
+.spin-dk{border-color:rgba(10,61,107,.15);border-top-color:var(--pr);}
+
+.toasts{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:7px;min-width:300px;}
+.toast{padding:11px 16px;border-radius:9px;font-size:.84rem;font-weight:600;display:flex;align-items:center;gap:7px;box-shadow:0 5px 20px rgba(0,0,0,.14);animation:sd .3s ease;}
+@keyframes sd{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast.ok{background:#1a7a4a;color:#fff;}
+.toast.er{background:var(--err);color:#fff;}
+.toast.in{background:var(--pr);color:#fff;}
+
+.lov{position:fixed;inset:0;background:rgba(10,61,107,.6);z-index:9998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+.lov.show{display:flex;}
+.big-sp{width:50px;height:50px;border:5px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:rot .9s linear infinite;}
+.lov p{color:#fff;font-size:.92rem;font-weight:600;}
+
+@media(max-width:900px){
+  .main{padding:14px;}
+  .hdr-in{padding:12px 14px;}
+  .stats-in{flex-wrap:wrap;}
+  .st{padding:9px 14px;}
+  .dg{grid-template-columns:1fr;}
+  .mbox{max-width:100%;}
+  .p-grid{grid-template-columns:1fr;}
+  .p-header{flex-direction:column;gap:3mm;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ LOGIN SCREEN ══════════════════════ -->
+<div id="loginScreen" style="display:flex;">
+  <style>
+    #loginScreen {
+      position: fixed; inset: 0; z-index: 99999;
+      background: #0a3d6b;
+      align-items: center; justify-content: center;
+      font-family: 'Cairo', sans-serif;
+      direction: rtl;
+      overflow: hidden;
+    }
+
+    /* ── animated background ── */
+    #loginScreen::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 20%, rgba(0,180,216,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 80%, rgba(21,101,168,.35) 0%, transparent 60%),
+        linear-gradient(145deg, #06294a 0%, #0a3d6b 40%, #0d5090 80%, #072340 100%);
+      z-index: 0;
+    }
+
+    /* floating particles */
+    .lp-particle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: .08;
+      animation: lp-float linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+    @keyframes lp-float {
+      0%   { transform: translateY(110vh) rotate(0deg); opacity:0; }
+      10%  { opacity:.08; }
+      90%  { opacity:.08; }
+      100% { transform: translateY(-10vh) rotate(720deg); opacity:0; }
+    }
+
+    /* grid lines overlay */
+    .lp-grid {
+      position: absolute; inset: 0; z-index: 1;
+      background-image:
+        linear-gradient(rgba(0,180,216,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,180,216,.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* ── card ── */
+    .lp-card {
+      position: relative; z-index: 10;
+      width: 100%; max-width: 460px;
+      margin: 16px;
+      background: rgba(255,255,255,.04);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 24px;
+      padding: 44px 40px 36px;
+      box-shadow:
+        0 32px 80px rgba(0,0,0,.45),
+        0 0 0 1px rgba(255,255,255,.05) inset,
+        0 1px 0 rgba(255,255,255,.15) inset;
+      animation: lp-in .6s cubic-bezier(.22,.68,0,1.2);
+    }
+    @keyframes lp-in {
+      from { transform: translateY(30px) scale(.96); opacity:0; }
+      to   { transform: translateY(0)    scale(1);   opacity:1; }
+    }
+
+    /* ── logo block ── */
+    .lp-logo-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; margin-bottom: 32px;
+    }
+    .lp-logo-ring {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00b4d8, #e9c46a 60%, #1565a8);
+      padding: 3px;
+      box-shadow: 0 0 40px rgba(0,180,216,.4), 0 0 0 8px rgba(0,180,216,.08);
+      animation: lp-pulse 3s ease-in-out infinite;
+      margin-bottom: 18px;
+    }
+    @keyframes lp-pulse {
+      0%,100% { box-shadow: 0 0 30px rgba(0,180,216,.35), 0 0 0 8px rgba(0,180,216,.07); }
+      50%      { box-shadow: 0 0 55px rgba(0,180,216,.55), 0 0 0 14px rgba(0,180,216,.12); }
+    }
+    .lp-logo-inner {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #063a66, #0c4e8c);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px;
+    }
+    .lp-univ {
+      font-size: .78rem; color: rgba(255,255,255,.5);
+      letter-spacing: .5px; margin-bottom: 4px; text-align: center;
+    }
+    .lp-title {
+      font-size: 1.22rem; font-weight: 900;
+      color: #fff; text-align: center; line-height: 1.35;
+      text-shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+    .lp-subtitle {
+      font-size: .8rem; color: rgba(0,180,216,.9);
+      text-align: center; margin-top: 5px; letter-spacing: .3px;
+    }
+
+    /* ── divider ── */
+    .lp-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 0 0 26px;
+    }
+    .lp-divider-line {
+      flex:1; height:1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+    }
+    .lp-divider-text {
+      font-size: .7rem; color: rgba(255,255,255,.35); white-space: nowrap;
+    }
+
+    /* ── form ── */
+    .lp-label {
+      display: block; font-size: .8rem; font-weight: 700;
+      color: rgba(255,255,255,.7); margin-bottom: 8px;
+      padding-right: 2px;
+    }
+    .lp-input-wrap {
+      position: relative; margin-bottom: 18px;
+    }
+    .lp-input-icon {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px; opacity: .45; pointer-events: none;
+    }
+    .lp-input {
+      width: 100%;
+      padding: 13px 44px 13px 16px;
+      background: rgba(255,255,255,.07);
+      border: 1.5px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      font-family: 'Cairo', sans-serif;
+      font-size: .92rem; font-weight: 600;
+      color: #fff;
+      direction: ltr; text-align: center;
+      letter-spacing: 4px;
+      outline: none;
+      transition: all .25s;
+    }
+    .lp-input::placeholder { letter-spacing:0; color:rgba(255,255,255,.25); font-size:.82rem; text-align:center; direction:rtl; }
+    .lp-input:focus {
+      border-color: #00b4d8;
+      background: rgba(0,180,216,.08);
+      box-shadow: 0 0 0 4px rgba(0,180,216,.15);
+    }
+    .lp-input.error {
+      border-color: #e74c3c;
+      background: rgba(231,76,60,.08);
+      box-shadow: 0 0 0 4px rgba(231,76,60,.12);
+      animation: lp-shake .4s ease;
+    }
+    @keyframes lp-shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-7px)}
+      40%{transform:translateX(7px)}
+      60%{transform:translateX(-5px)}
+      80%{transform:translateX(5px)}
+    }
+
+    /* eye toggle */
+    .lp-eye {
+      position: absolute; left: 13px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.3); font-size: 15px; padding: 3px;
+      transition: color .2s;
+    }
+    .lp-eye:hover { color: rgba(255,255,255,.7); }
+
+    /* error msg */
+    .lp-err-msg {
+      display: none; align-items: center; gap: 7px;
+      background: rgba(231,76,60,.15);
+      border: 1px solid rgba(231,76,60,.3);
+      border-radius: 9px; padding: 10px 14px;
+      margin-bottom: 16px; font-size: .82rem; color: #ff8a80;
+      animation: lp-in .3s ease;
+    }
+    .lp-err-msg.show { display: flex; }
+
+    /* ── submit button ── */
+    .lp-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #0096b4 0%, #00b4d8 50%, #1565a8 100%);
+      background-size: 200% 100%;
+      border: none; border-radius: 13px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 1rem; font-weight: 900;
+      color: #fff; cursor: pointer;
+      transition: all .3s;
+      box-shadow: 0 6px 24px rgba(0,180,216,.35);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: .3px;
+    }
+    .lp-btn:hover:not(:disabled) {
+      background-position: right center;
+      box-shadow: 0 10px 32px rgba(0,180,216,.5);
+      transform: translateY(-1px);
+    }
+    .lp-btn:active:not(:disabled) { transform: translateY(0); }
+    .lp-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ── footer tag ── */
+    .lp-footer {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,.07);
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+    }
+    .lp-footer-name {
+      font-size: .72rem; color: rgba(255,255,255,.28);
+    }
+    .lp-footer-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: .68rem; color: rgba(0,180,216,.45);
+    }
+    .lp-dot { width:6px;height:6px;border-radius:50%;background:#00b4d8;animation:lp-blink 1.4s ease-in-out infinite; }
+    @keyframes lp-blink { 0%,100%{opacity:.3}50%{opacity:1} }
+  </style>
+
+  <!-- animated background particles -->
+  <div class="lp-grid"></div>
+  <div class="lp-particle" style="width:180px;height:180px;background:#00b4d8;left:5%;animation-duration:18s;animation-delay:0s;"></div>
+  <div class="lp-particle" style="width:100px;height:100px;background:#e9c46a;left:75%;animation-duration:14s;animation-delay:3s;"></div>
+  <div class="lp-particle" style="width:140px;height:140px;background:#1565a8;left:45%;animation-duration:22s;animation-delay:6s;"></div>
+  <div class="lp-particle" style="width:60px;height:60px;background:#00b4d8;left:88%;animation-duration:11s;animation-delay:1s;"></div>
+  <div class="lp-particle" style="width:90px;height:90px;background:#ffffff;left:20%;animation-duration:16s;animation-delay:8s;"></div>
+
+  <div class="lp-card">
+    <!-- Logo & Title -->
+    <div class="lp-logo-wrap">
+      <div class="lp-logo-ring">
+        <div class="lp-logo-inner">🎓</div>
+      </div>
+      <div class="lp-univ">جامعة بني سويف</div>
+      <div class="lp-title">كلية تكنولوجيا العلوم الصحية</div>
+      <div class="lp-subtitle">⚙️ &nbsp;نظام إدارة شئون الخريجين</div>
+    </div>
+
+    <!-- Divider -->
+    <div class="lp-divider">
+      <div class="lp-divider-line"></div>
+      <div class="lp-divider-text">🔐 تسجيل الدخول</div>
+      <div class="lp-divider-line"></div>
+    </div>
+
+    <!-- Error message -->
+    <div class="lp-err-msg" id="lpErrMsg">
+      <span>⚠️</span>
+      <span>كلمة المرور غير صحيحة. يُرجى المحاولة مرة أخرى.</span>
+    </div>
+
+    <!-- Password field -->
+    <label class="lp-label" for="lpPass">🔑 &nbsp;كلمة المرور</label>
+    <div class="lp-input-wrap">
+      <span class="lp-input-icon">🔒</span>
+      <input
+        type="password"
+        id="lpPass"
+        class="lp-input"
+        placeholder="أدخل كلمة المرور"
+        maxlength="20"
+        autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')lpLogin()"
+      >
+      <button class="lp-eye" id="lpEyeBtn" onclick="lpToggleEye()" type="button" title="إظهار / إخفاء">👁</button>
+    </div>
+
+    <!-- Submit -->
+    <button class="lp-btn" id="lpBtn" onclick="lpLogin()">
+      <span id="lpBtnTxt">دخول إلى النظام</span>
+      <span id="lpBtnArrow">←</span>
+    </button>
+
+    <!-- Footer -->
+    <div class="lp-footer">
+      <div class="lp-footer-badge">
+        <div class="lp-dot"></div>
+        النظام مُشفَّر ومحمي بكلمة مرور
+      </div>
+      <div class="lp-footer-name">شئون الخريجين — لوحة الإدارة</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const PASS = '0000000';
+    function lpLogin(){
+      const inp = document.getElementById('lpPass');
+      const err = document.getElementById('lpErrMsg');
+      const btn = document.getElementById('lpBtn');
+      const val = inp.value;
+      if(val === PASS){
+        btn.disabled = true;
+        document.getElementById('lpBtnTxt').textContent = 'جاري الدخول...';
+        document.getElementById('lpBtnArrow').innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:lp-spin .7s linear infinite;"></span>';
+        const style = document.createElement('style');
+        style.textContent = '@keyframes lp-spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(style);
+        // brief delay for UX feel
+        setTimeout(()=>{
+          document.getElementById('loginScreen').style.animation = 'lp-out .4s ease forwards';
+          const outSt = document.createElement('style');
+          outSt.textContent = '@keyframes lp-out{to{opacity:0;transform:scale(1.03)}}';
+          document.head.appendChild(outSt);
+          setTimeout(()=>{
+            document.getElementById('loginScreen').style.display = 'none';
+          }, 420);
+        }, 700);
+        err.classList.remove('show');
+      } else {
+        err.classList.add('show');
+        inp.classList.add('error');
+        inp.value = '';
+        setTimeout(()=>inp.classList.remove('error'), 600);
+        inp.focus();
+      }
+    }
+
+    function lpToggleEye(){
+      const inp = document.getElementById('lpPass');
+      const btn = document.getElementById('lpEyeBtn');
+      if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+      else{inp.type='password';btn.textContent='👁';}
+    }
+
+    window.lpLogin       = lpLogin;
+    window.lpToggleEye   = lpToggleEye;
+
+    // auto-focus
+    document.addEventListener('DOMContentLoaded',()=>{
+      setTimeout(()=>document.getElementById('lpPass').focus(),400);
+    });
+  })();
+</script>
+
+<!-- Loading -->
+<div class="lov" id="lov"><div class="big-sp"></div><p id="lovMsg">جاري التحميل...</p></div>
+<div class="toasts" id="toasts"></div>
+
+<!-- Print Area -->
+<div id="printArea"></div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-in">
+    <div class="logo">🎓</div>
+    <div class="hdr-txt">
+      <h1>كلية تكنولوجيا العلوم الصحية</h1>
+    </div>
+    <div class="hdr-right">
+      <button class="btn btn-out" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3);" onclick="openImportExport()">📁 استيراد / تصدير</button>
+      <span class="badge-admin">🔐 لوحة الإدارة</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stats-in">
+    <div class="st on" id="st-all"  onclick="filterStat('')">
+      <span class="st-ico">📋</span>
+      <div><div class="st-num" id="cn-all">—</div><div class="st-lbl">إجمالي الطلبات</div></div>
+    </div>
+    <div class="st" id="st-wait" onclick="filterStat('قيد الانتظار')">
+      <span class="st-ico">⏳</span>
+      <div><div class="st-num" id="cn-wait">—</div><div class="st-lbl">قيد الانتظار</div></div>
+    </div>
+    <div class="st" id="st-proc" onclick="filterStat('قيد المعالجة')">
+      <span class="st-ico">⚙️</span>
+      <div><div class="st-num" id="cn-proc">—</div><div class="st-lbl">قيد المعالجة</div></div>
+    </div>
+    <div class="st" id="st-done" onclick="filterStat('جاهز')">
+      <span class="st-ico">✅</span>
+      <div><div class="st-num" id="cn-done">—</div><div class="st-lbl">جاهز</div></div>
+    </div>
+    <div class="st" id="st-deli" onclick="filterStat('تم التسليم')">
+      <span class="st-ico">📦</span>
+      <div><div class="st-num" id="cn-deli">—</div><div class="st-lbl">تم التسليم</div></div>
+    </div>
+    <div class="st" id="st-rejc" onclick="filterStat('مرفوض')">
+      <span class="st-ico">❌</span>
+      <div><div class="st-num" id="cn-rejc">—</div><div class="st-lbl">مرفوض</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOOLBAR -->
+  <div class="tb">
+    <div class="srch">
+      <span>🔍</span>
+      <input type="text" id="srchQ" placeholder="ابحث بالاسم أو الرقم القومي أو رقم الطلب..."
+             oninput="applyFilters()">
+    </div>
+    <select class="flt" id="fltType" onchange="applyFilters()">
+      <option value="">كل أنواع الطلبات</option>
+      <option>شهادة تخرج عربي</option>
+      <option>شهادة تخرج إنجليزي</option>
+      <option>بيان درجات</option>
+      <option>إفادة بسنة الامتياز</option>
+      <option>إفادة بالدراسة</option>
+    </select>
+    <select class="flt" id="fltStatus" onchange="applyFilters()">
+      <option value="">كل الحالات</option>
+      <option>قيد الانتظار</option>
+      <option>قيد المعالجة</option>
+      <option>جاهز</option>
+      <option>تم التسليم</option>
+      <option>مرفوض</option>
+    </select>
+    <button class="sort-btn" id="sortBtn" onclick="toggleSort()">
+      <span id="sortIco">↓</span><span id="sortLbl">الأحدث أولاً</span>
+    </button>
+    <button class="btn btn-pr" onclick="loadAll()">🔄 تحديث</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="tcard">
+    <div class="tcard-head">
+      <span class="tcard-title">📁 سجل الطلبات</span>
+      <span id="resCnt" style="font-size:.78rem;color:var(--muted);"></span>
+    </div>
+    <div class="twrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>رقم الطلب</th>
+            <th>اسم الطالب</th>
+            <th>الرقم القومي</th>
+            <th>نوع الشهادة</th>
+            <th>الإيصال</th>
+            <th>معاينة</th>
+            <th>نسخ</th>
+            <th>تاريخ التقديم</th>
+            <th>الطباعة</th>
+            <th>التسليم</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="13" class="empty-cell">
+            <span class="empty-ico">⏳</span>جاري التحميل...
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pag" id="pag"></div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: تفاصيل الطلب ═══════ -->
+<div class="ov" id="importExportOv">
+  <div class="mbox" style="max-width:560px;">
+    <div class="mhead">
+      <h3>📁 استيراد / تصدير البيانات</h3>
+      <button class="mclose" onclick="closeOv('importExportOv')">✕</button>
+    </div>
+    <div class="mbody">
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--txt);margin-bottom:10px;">
+        📥 استيراد من ملف إكسيل
+      </div>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:10px;line-height:1.8;">
+        الملف لازم يكون بنفس تنسيق شيت البيانات الأصلي: 3 شيتات باسم
+        <b>"بيانات الخريجين"</b>، <b>"الطلاب"</b>، <b>"الطلبات"</b> (أي شيت غير موجود هيتجاهل).
+        البيانات هتتحدّث في Firebase حسب الرقم القومي / رقم الطلب — يعني لو موجود هيتحدّث، ولو جديد هيتضاف.
+      </p>
+      <input type="file" id="ieFileInput" accept=".xlsx,.xls" style="margin-bottom:12px; font-size:.8rem;">
+      <div id="ieImportStatus" style="font-size:.78rem; font-weight:700; margin-bottom:10px;"></div>
+      <button class="btn btn-pr" onclick="doImportExcel()" id="ieImportBtn" style="width:100%;">📥 بدء الاستيراد</button>
+
+      <hr style="margin:22px 0; border:none; border-top:2px solid var(--sur);">
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--txt);margin-bottom:10px;">
+        📤 تصدير كل البيانات كملف إكسيل
+      </div>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:10px;line-height:1.8;">
+        بيطلع ملف إكسيل فيه كل بيانات الطلاب والطلبات والخريجين من Firebase حالياً.
+      </p>
+      <button class="btn btn-ok" onclick="doExportExcel()" id="ieExportBtn" style="width:100%;">📤 تنزيل ملف الإكسيل</button>
+
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="detailOv">
+  <div class="mbox">
+    <div class="mhead">
+      <h3>📋 <span id="mTitle">تفاصيل الطلب</span></h3>
+      <button class="mclose" onclick="closeOv('detailOv')">✕</button>
+    </div>
+    <div class="mbody">
+
+      <!-- Timeline -->
+      <div class="timeline" id="statusTimeline"></div>
+
+      <!-- بيانات -->
+      <div class="dg" id="detailGrid"></div>
+
+      <!-- صورة الإيصال -->
+      <div style="font-size:.78rem;font-weight:700;color:var(--txt);margin-bottom:7px;">🧾 صورة الإيصال المدفوع</div>
+      <div class="img-box" id="rcptBox"><div class="no-img">لا توجد صورة</div></div>
+      <div class="img-acts" id="rcptActs" style="display:none;">
+        <a id="rcptOpen" href="#" target="_blank" class="btn btn-sm btn-pr">🔗 فتح في Drive</a>
+        <a id="rcptDl"   href="#" target="_blank" class="btn btn-sm btn-out">⬇️ تنزيل</a>
+      </div>
+
+      <!-- الشهادة المترجمة -->
+      <div id="transSection" style="display:none;margin-top:14px;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--txt);margin-bottom:7px;">📋 الشهادة المترجمة</div>
+        <div class="img-box" id="transBox"><div class="no-img">لا توجد صورة</div></div>
+        <div class="img-acts" id="transActs" style="display:none;">
+          <a id="transOpen" href="#" target="_blank" class="btn btn-sm btn-pr">🔗 فتح في Drive</a>
+          <a id="transDl"   href="#" target="_blank" class="btn btn-sm btn-out">⬇️ تنزيل</a>
+        </div>
+      </div>
+
+      <!-- تعديل الحالة -->
+      <div class="fg" style="margin-top:16px;">
+        <label>📌 تعديل الحالة</label>
+        <select id="editStatus">
+          <option value="قيد الانتظار">⏳ قيد الانتظار</option>
+          <option value="قيد المعالجة">⚙️ قيد المعالجة</option>
+          <option value="جاهز">✅ جاهز</option>
+          <option value="تم التسليم">📦 تم التسليم</option>
+          <option value="مرفوض">❌ مرفوض</option>
+        </select>
+      </div>
+
+      <!-- ملاحظات -->
+      <div class="fg">
+        <label>📝 ملاحظات</label>
+        <textarea id="editNotes" placeholder="أكتب ملاحظاتك هنا..."></textarea>
+      </div>
+
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-out" onclick="closeOv('detailOv')">إغلاق</button>
+      <button class="btn btn-warn" onclick="markDelivered()" id="dlivBtn">📦 تسجيل التسليم</button>
+      <button class="btn btn-ok"   onclick="doPrint()"       id="printBtn">🖨️ طباعة الشهادة</button>
+      <button class="btn btn-pr"   onclick="saveChanges()"   id="saveBtn">💾 حفظ التغييرات</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getDatabase, ref, set, get, update, remove, push, serverTimestamp,
+  query, orderByChild, equalTo
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAplBirpvzpUKfMCOPSp7-1JxMyrvCxEzI",
+  authDomain: "students-graduated.firebaseapp.com",
+  databaseURL: "https://students-graduated-default-rtdb.firebaseio.com",
+  projectId: "students-graduated",
+  storageBucket: "students-graduated.firebasestorage.app",
+  messagingSenderId: "903790718920",
+  appId: "1:903790718920:web:048defd4818724b44d1afd"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const NODE_STUDENTS  = 'students';
+const NODE_REQUESTS  = 'requests';
+const NODE_GRADUATES = 'graduates';
+const NODE_LOGS      = 'logs';
+
+async function logAction(action, id, detail) {
+  try {
+    await push(ref(db, NODE_LOGS), {
+      date: new Date().toLocaleString('ar-EG'),
+      action, id, detail,
+      ts: serverTimestamp()
+    });
+  } catch (e) { /* silent fail */ }
+}
+
+function generateRequestNumber() {
+  return 'REQ-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-6);
+}
+
+// ── Students ─────────────────────────────────────────────────
+async function getStudent(data) {
+  const nationalId = data.nationalId;
+  if (!nationalId) return { found: false, error: 'الرقم القومي مطلوب' };
+  try {
+    const snap = await get(ref(db, `${NODE_STUDENTS}/${nationalId}`));
+    if (!snap.exists()) return { found: false };
+    return { found: true, data: snap.val() };
+  } catch (err) {
+    return { found: false, error: err.message || String(err) };
+  }
+}
+
+async function saveStudent(body) {
+  const required = ['nationalId', 'nameAr', 'nameEn', 'phone', 'email',
+                     'gender', 'dob', 'studySystem', 'department', 'governorate'];
+  for (const f of required) {
+    if (!body[f] || String(body[f]).trim() === '') {
+      return { success: false, error: 'الحقل مطلوب: ' + f };
+    }
+  }
+  if (String(body.nationalId).length !== 14) {
+    return { success: false, error: 'الرقم القومي يجب أن يكون 14 رقماً' };
+  }
+
+  try {
+    const nid = String(body.nationalId).trim();
+    const nodeRef = ref(db, `${NODE_STUDENTS}/${nid}`);
+    const snap = await get(nodeRef);
+    const now = new Date().toLocaleString('ar-EG');
+
+    const record = {
+      national_id : nid,
+      name_ar     : body.nameAr.trim(),
+      name_en     : body.nameEn.trim(),
+      governorate : body.governorate.trim(),
+      phone       : String(body.phone).trim(),
+      email       : body.email.trim(),
+      gender      : body.gender.trim(),
+      dob         : body.dob,
+      study_system: body.studySystem.trim(),
+      department  : body.department.trim(),
+      registered_at: snap.exists() ? (snap.val().registered_at || now) : now,
+      updated_at  : now
+    };
+
+    await set(nodeRef, record);
+    logAction(snap.exists() ? 'update_student' : 'create_student', nid, record.name_ar);
+    return { success: true, action: snap.exists() ? 'updated' : 'created' };
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+// ── Requests ─────────────────────────────────────────────────
+async function submitRequest(body) {
+  if (!body.nationalId)  return { success: false, error: 'الرقم القومي مطلوب' };
+  if (!body.requestType) return { success: false, error: 'نوع الشهادة مطلوب' };
+  if (!body.receiptNo)   return { success: false, error: 'رقم الإيصال مطلوب' };
+  if (!body.count || body.count < 1) return { success: false, error: 'عدد النسخ مطلوب' };
+  if (!body.receiptUrl)  return { success: false, error: 'رابط صورة الإيصال مطلوب' };
+  if (body.requestType === 'شهادة تخرج إنجليزي' && !body.translatedUrl) {
+    return { success: false, error: 'رابط الشهادة المترجمة مطلوب' };
+  }
+
+  try {
+    const reqNum = generateRequestNumber();
+    const now = body.submittedAt || new Date().toLocaleString('ar-EG');
+    const row = {
+      requestNumber       : reqNum,
+      nationalId          : String(body.nationalId).trim(),
+      nameAr              : (body.nameAr || '').trim(),
+      requestType         : body.requestType,
+      receiptNo           : String(body.receiptNo).trim(),
+      count               : Number(body.count),
+      receiptUrl          : body.receiptUrl || '',
+      receiptUrlTranslated: body.translatedUrl || '',
+      submittedAt         : now,
+      status              : 'قيد الانتظار',
+      notes               : '',
+      printedAt           : '',
+      deliveredAt         : ''
+    };
+
+    await set(ref(db, `${NODE_REQUESTS}/${reqNum}`), row);
+    logAction('submit_request', reqNum, row.nameAr);
+    return { success: true, requestNumber: reqNum };
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+async function getRequests(data) {
+  const nationalId = data.nationalId;
+  if (!nationalId) return { success: false, error: 'الرقم القومي مطلوب', requests: [] };
+  try {
+    const q = query(ref(db, NODE_REQUESTS), orderByChild('nationalId'), equalTo(String(nationalId).trim()));
+    const snap = await get(q);
+    const val = snap.exists() ? snap.val() : {};
+    const rows = Object.values(val).reverse();
+    return { success: true, requests: rows };
+  } catch (err) {
+    return { success: false, requests: [], error: err.message || String(err) };
+  }
+}
+
+async function getAllRequests() {
+  try {
+    const snap = await get(ref(db, NODE_REQUESTS));
+    const val = snap.exists() ? snap.val() : {};
+    const rows = Object.values(val).reverse();
+    return { success: true, requests: rows };
+  } catch (err) {
+    return { success: false, requests: [], error: err.message || String(err) };
+  }
+}
+
+async function updateRequest(body) {
+  if (!body.requestNumber) return { success: false, error: 'رقم الطلب مطلوب' };
+  try {
+    const nodeRef = ref(db, `${NODE_REQUESTS}/${body.requestNumber}`);
+    const snap = await get(nodeRef);
+    if (!snap.exists()) return { success: false, error: 'لم يُعثر على الطلب: ' + body.requestNumber };
+
+    const patch = {};
+    if (body.status !== undefined) patch.status = body.status;
+    if (body.notes  !== undefined) patch.notes  = body.notes;
+    await update(nodeRef, patch);
+    logAction('update_request', body.requestNumber, body.status || '');
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+async function recordPrint(body) {
+  if (!body.requestNumber) return { success: false, error: 'رقم الطلب مطلوب' };
+  try {
+    const nodeRef = ref(db, `${NODE_REQUESTS}/${body.requestNumber}`);
+    const snap = await get(nodeRef);
+    if (!snap.exists()) return { success: false, error: 'لم يُعثر على الطلب' };
+
+    const now = new Date().toLocaleString('ar-EG');
+    await update(nodeRef, { status: 'جاهز', printedAt: now });
+    logAction('record_print', body.requestNumber, '');
+    return { success: true, printedAt: now };
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+async function recordDelivery(body) {
+  if (!body.requestNumber) return { success: false, error: 'رقم الطلب مطلوب' };
+  try {
+    const nodeRef = ref(db, `${NODE_REQUESTS}/${body.requestNumber}`);
+    const snap = await get(nodeRef);
+    if (!snap.exists()) return { success: false, error: 'لم يُعثر على الطلب' };
+
+    const now = new Date().toLocaleString('ar-EG');
+    await update(nodeRef, { status: 'تم التسليم', deliveredAt: now });
+    logAction('record_delivery', body.requestNumber, '');
+    return { success: true, deliveredAt: now };
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+// ── Graduates (بيانات الخريجين — مرجعية، بتتقرأ بس) ────────────
+async function getGraduateData(data) {
+  const nationalId = data.nationalId;
+  if (!nationalId) return { found: false, error: 'الرقم القومي مطلوب' };
+  try {
+    const snap = await get(ref(db, `${NODE_GRADUATES}/${nationalId}`));
+    if (!snap.exists()) return { found: false };
+    return { found: true, data: snap.val() };
+  } catch (err) {
+    return { found: false, error: err.message || String(err) };
+  }
+}
+
+// ── Bulk import (من ملف إكسيل) ────────────────────────────────
+// كل دالة بتاخد مصفوفة سجلات جاهزة (اتحولت في الواجهة من صفوف الإكسيل)
+// وبتكتبها كلها في تحديث واحد على Firebase (multi-path update).
+async function bulkImportStudents(rows) {
+  if (!rows || !rows.length) return { success: true, count: 0 };
+  const updates = {};
+  rows.forEach(r => { if (r.national_id) updates[`${NODE_STUDENTS}/${r.national_id}`] = r; });
+  await update(ref(db), updates);
+  logAction('bulk_import', 'students', `${rows.length} سجل`);
+  return { success: true, count: rows.length };
+}
+
+async function bulkImportRequests(rows) {
+  if (!rows || !rows.length) return { success: true, count: 0 };
+  const updates = {};
+  rows.forEach(r => { if (r.requestNumber) updates[`${NODE_REQUESTS}/${r.requestNumber}`] = r; });
+  await update(ref(db), updates);
+  logAction('bulk_import', 'requests', `${rows.length} سجل`);
+  return { success: true, count: rows.length };
+}
+
+async function bulkImportGraduates(rows) {
+  if (!rows || !rows.length) return { success: true, count: 0 };
+  const updates = {};
+  rows.forEach(r => { if (r.national_id) updates[`${NODE_GRADUATES}/${r.national_id}`] = r; });
+  await update(ref(db), updates);
+  logAction('bulk_import', 'graduates', `${rows.length} سجل`);
+  return { success: true, count: rows.length };
+}
+
+// ── Export all data (لتصديرها إكسيل من الواجهة) ────────────────
+async function exportAllData() {
+  try {
+    const [sSnap, rSnap, gSnap] = await Promise.all([
+      get(ref(db, NODE_STUDENTS)),
+      get(ref(db, NODE_REQUESTS)),
+      get(ref(db, NODE_GRADUATES))
+    ]);
+    return {
+      success: true,
+      students : sSnap.exists() ? Object.values(sSnap.val())  : [],
+      requests : rSnap.exists() ? Object.values(rSnap.val())  : [],
+      graduates: gSnap.exists() ? Object.values(gSnap.val())  : []
+    };
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+window.GradFirebaseAPI = {
+  getStudent,
+  saveStudent,
+  submitRequest,
+  getRequests,
+  getAllRequests,
+  updateRequest,
+  recordPrint,
+  recordDelivery,
+  getGraduateData,
+  bulkImportStudents,
+  bulkImportRequests,
+  bulkImportGraduates,
+  exportAllData
+};
+
+window.dispatchEvent(new Event('grad-firebase-api-ready'));
+</script>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDmEGu_nRpJHlpxU-tbP7CsTklKaVzO4ifgSHsmy2MbftT7GgU-BJJOiXcrR-b8ar9/exec';
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let ALL      = [];
+let FILTERED = [];
+let PAGE     = 1;
+const PG     = 15;
+let SORT_ASC = false;
+let CUR      = null;
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+// رفع الملفات (uploadFile) بيتم عن طريق Google Apps Script + Drive،
+// وباقي الـ actions بقت بتتعامل مباشرة مع Firebase Realtime Database.
+async function apiViaAppsScript(action, data={}) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 29000);
+  let r;
+  try {
+    r = await fetch(APPS_SCRIPT_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action,...data}),
+      signal: ctrl.signal,
+      redirect: 'follow'
+    });
+  } finally { clearTimeout(timer); }
+  if (!r.ok) {
+    let em = 'HTTP '+r.status;
+    try{ const ej=await r.json(); if(ej.error) em=ej.error; }catch(_){}
+    throw new Error(em);
+  }
+  const text = await r.text();
+  let j;
+  try { j = JSON.parse(text); }
+  catch(e) {
+    console.error('Apps Script non-JSON:', text.substring(0,400));
+    throw new Error('استجابة غير متوقعة من الخادم — تحقق من نشر Apps Script');
+  }
+  if (j.success===false && j.error && j.found===undefined) throw new Error(j.error);
+  return j;
+}
+
+async function api(action, data={}) {
+  if (action === 'uploadFile') return apiViaAppsScript(action, data);
+  if (!window.GradFirebaseAPI || typeof window.GradFirebaseAPI[action] !== 'function') {
+    throw new Error('action غير معروف: ' + action);
+  }
+  const j = await window.GradFirebaseAPI[action](data);
+  if (j.success===false && j.error && j.found===undefined) throw new Error(j.error);
+  return j;
+}
+
+function lov(msg='جاري...'){
+  document.getElementById('lovMsg').textContent=msg;
+  document.getElementById('lov').classList.add('show');
+}
+function hideLov(){ document.getElementById('lov').classList.remove('show'); }
+
+function toast(msg, type='in', dur=4500){
+  const w=document.getElementById('toasts');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  t.innerHTML=(type==='ok'?'✅':type==='er'?'❌':'ℹ️')+' '+msg;
+  w.appendChild(t);
+  setTimeout(()=>t.remove(), dur);
+}
+
+function closeOv(id){ document.getElementById(id).classList.remove('open'); }
+
+// ══════════════════════════════════════════
+//  استيراد / تصدير إكسيل
+// ══════════════════════════════════════════
+function openImportExport(){
+  document.getElementById('ieImportStatus').textContent = '';
+  document.getElementById('ieFileInput').value = '';
+  document.getElementById('importExportOv').classList.add('open');
+}
+
+function ieToStr(v){
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date) return `${v.getDate()}/${v.getMonth()+1}/${v.getFullYear()}`;
+  if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(v);
+  return String(v).trim();
+}
+function ieToIsoDate(v){
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date) {
+    const y=v.getFullYear(), m=String(v.getMonth()+1).padStart(2,'0'), d=String(v.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  return String(v).trim();
+}
+function ieSheetRows(wb, name){
+  if (!wb.Sheets[name]) return [];
+  return XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, defval:null }).slice(1)
+    .filter(r => r && r.some(v => v !== null && v !== ''));
+}
+
+async function doImportExcel(){
+  const input = document.getElementById('ieFileInput');
+  const file = input.files[0];
+  const statusEl = document.getElementById('ieImportStatus');
+  if (!file) { statusEl.style.color='var(--err)'; statusEl.textContent='من فضلك اختر ملف إكسيل أولاً'; return; }
+
+  const btn = document.getElementById('ieImportBtn');
+  btn.disabled = true;
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'جاري قراءة الملف...';
+
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type:'array', cellDates:true });
+
+    // بيانات الخريجين
+    const gradRows = ieSheetRows(wb, 'بيانات الخريجين').map(r => ({
+      national_id: ieToStr(r[0]), name_ar: ieToStr(r[1]), name_en: ieToStr(r[2]),
+      dob: ieToStr(r[3]), address: ieToStr(r[4]), department: ieToStr(r[5]),
+      grade: ieToStr(r[6]), study_system: ieToStr(r[7]), percentage: ieToStr(r[8]),
+      total: ieToStr(r[9]), attempt: ieToStr(r[10]), council_date_college: ieToStr(r[11]),
+      council_date_university: ieToStr(r[12]), gender: ieToStr(r[13])
+    })).filter(r => r.national_id);
+
+    // الطلاب
+    const studentRows = ieSheetRows(wb, 'الطلاب').map(r => ({
+      national_id: ieToStr(r[0]), name_ar: ieToStr(r[1]), name_en: ieToStr(r[2]),
+      governorate: ieToStr(r[3]), phone: ieToStr(r[4]), email: ieToStr(r[5]),
+      gender: ieToStr(r[6]), dob: ieToIsoDate(r[7]), study_system: ieToStr(r[8]),
+      department: ieToStr(r[9]), registered_at: ieToStr(r[10]), updated_at: ieToStr(r[11])
+    })).filter(r => r.national_id);
+
+    // الطلبات
+    const requestRows = ieSheetRows(wb, 'الطلبات').map(r => {
+      let count = r[5];
+      count = (count === null || count === '') ? '' : (Number.isInteger(count) ? count : (parseInt(count) || ieToStr(count)));
+      return {
+        requestNumber: ieToStr(r[0]), nationalId: ieToStr(r[1]), nameAr: ieToStr(r[2]),
+        requestType: ieToStr(r[3]), receiptNo: ieToStr(r[4]), count,
+        receiptUrl: ieToStr(r[6]), receiptUrlTranslated: ieToStr(r[7]),
+        submittedAt: ieToStr(r[8]), status: ieToStr(r[9]) || 'قيد الانتظار',
+        notes: ieToStr(r[10]), printedAt: ieToStr(r[11]), deliveredAt: ieToStr(r[12])
+      };
+    }).filter(r => r.requestNumber);
+
+    if (!gradRows.length && !studentRows.length && !requestRows.length) {
+      statusEl.style.color='var(--err)';
+      statusEl.textContent='الملف مايحتويش على شيتات معروفة ("بيانات الخريجين" / "الطلاب" / "الطلبات")';
+      btn.disabled = false;
+      return;
+    }
+
+    statusEl.textContent = 'جاري الحفظ على Firebase...';
+    const [gRes, sRes, rRes] = await Promise.all([
+      window.GradFirebaseAPI.bulkImportGraduates(gradRows),
+      window.GradFirebaseAPI.bulkImportStudents(studentRows),
+      window.GradFirebaseAPI.bulkImportRequests(requestRows)
+    ]);
+
+    statusEl.style.color = 'var(--ok)';
+    statusEl.textContent = `تم الاستيراد ✅ — خريجين: ${gRes.count || 0}، طلاب: ${sRes.count || 0}، طلبات: ${rRes.count || 0}`;
+    toast('تم استيراد البيانات بنجاح ✓', 'ok');
+    loadAll();
+  } catch (err) {
+    statusEl.style.color='var(--err)';
+    statusEl.textContent = 'حدث خطأ أثناء الاستيراد: ' + (err.message || err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doExportExcel(){
+  const btn = document.getElementById('ieExportBtn');
+  btn.disabled = true;
+  lov('جاري تجهيز ملف الإكسيل...');
+  try {
+    const res = await window.GradFirebaseAPI.exportAllData();
+    if (!res.success) throw new Error(res.error || 'فشل جلب البيانات');
+
+    const wb = XLSX.utils.book_new();
+
+    const gradHeaders = ['الرقم القومي','الاسم بالعربية','الاسم بالإنجليزية','تاريخ الميلاد','محل الإقامة','الشعبة / القسم','التقدير','نظام الدراسة','النسبة المئوية','المجموع','الدور','تاريخ منح مجلس الكلية','تاريخ منح مجلس الجامعة','النوع'];
+    const gradRows = res.graduates.map(g => [g.national_id,g.name_ar,g.name_en,g.dob,g.address,g.department,g.grade,g.study_system,g.percentage,g.total,g.attempt,g.council_date_college,g.council_date_university,g.gender]);
+    const wsGrad = XLSX.utils.aoa_to_sheet([gradHeaders, ...gradRows]);
+    XLSX.utils.book_append_sheet(wb, wsGrad, 'بيانات الخريجين');
+
+    const studentHeaders = ['الرقم القومي','الاسم عربي','الاسم إنجليزي','المحافظة','التليفون','البريد الإلكتروني','النوع','تاريخ الميلاد','نظام الدراسة','القسم','تاريخ التسجيل','آخر تحديث'];
+    const studentRows = res.students.map(s => [s.national_id,s.name_ar,s.name_en,s.governorate,s.phone,s.email,s.gender,s.dob,s.study_system,s.department,s.registered_at,s.updated_at]);
+    const wsStudents = XLSX.utils.aoa_to_sheet([studentHeaders, ...studentRows]);
+    XLSX.utils.book_append_sheet(wb, wsStudents, 'الطلاب');
+
+    const reqHeaders = ['رقم الطلب','الرقم القومي','اسم الطالب','نوع الشهادة','رقم الإيصال','عدد النسخ','رابط صورة الإيصال','رابط الشهادة المترجمة','تاريخ الطلب','الحالة','ملاحظات','تاريخ الطباعة','تاريخ التسليم'];
+    const reqRows = res.requests.map(r => [r.requestNumber,r.nationalId,r.nameAr,r.requestType,r.receiptNo,r.count,r.receiptUrl,r.receiptUrlTranslated,r.submittedAt,r.status,r.notes,r.printedAt,r.deliveredAt]);
+    const wsRequests = XLSX.utils.aoa_to_sheet([reqHeaders, ...reqRows]);
+    XLSX.utils.book_append_sheet(wb, wsRequests, 'الطلبات');
+
+    const fileName = 'بيانات الخريجين - ' + new Date().toLocaleDateString('en-GB').replaceAll('/','-') + '.xlsx';
+    XLSX.writeFile(wb, fileName);
+    toast('تم تنزيل ملف الإكسيل ✓', 'ok');
+  } catch (err) {
+    toast('حدث خطأ أثناء التصدير: ' + (err.message || err), 'er');
+  } finally {
+    hideLov();
+    btn.disabled = false;
+  }
+}
+
+function sClass(s){
+  if(s==='جاهز')          return 's-done';
+  if(s==='قيد المعالجة') return 's-proc';
+  if(s==='تم التسليم')   return 's-deli';
+  if(s==='مرفوض')         return 's-rejc';
+  return 's-wait';
+}
+
+function driveView(url){
+  const m = url.match(/\/d\/([^/]+)/);
+  return m ? 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w1000' : url;
+}
+
+// ══════════════════════════════════════════
+//  LOAD
+// ══════════════════════════════════════════
+async function loadAll(){
+  lov('جاري تحميل الطلبات...');
+  try{
+    const resp = await api('getAllRequests');
+    ALL = resp.requests || [];
+    updateStats();
+    applyFilters();
+    if(ALL.length===0){
+      renderEmpty('لا توجد طلبات بعد — الشيت فارغ');
+    } else {
+      toast('تم تحميل '+ALL.length+' طلب','ok');
+    }
+  }catch(e){
+    const msg = e.name==='AbortError'
+      ? 'انتهت مهلة الاتصال — الخادم بطيء، حاول مرة أخرى'
+      : 'خطأ: '+e.message;
+    toast(msg,'er',8000);
+    renderEmpty(msg);
+  }finally{ hideLov(); }
+}
+
+function updateStats(){
+  const c=(s)=>ALL.filter(r=>r.status===s).length;
+  document.getElementById('cn-all').textContent  = ALL.length;
+  document.getElementById('cn-wait').textContent = c('قيد الانتظار');
+  document.getElementById('cn-proc').textContent = c('قيد المعالجة');
+  document.getElementById('cn-done').textContent = c('جاهز');
+  document.getElementById('cn-deli').textContent = c('تم التسليم');
+  document.getElementById('cn-rejc').textContent = c('مرفوض');
+}
+
+// ══════════════════════════════════════════
+//  FILTER + SORT
+// ══════════════════════════════════════════
+function filterStat(s){
+  document.getElementById('fltStatus').value=s;
+  ['all','wait','proc','done','deli','rejc'].forEach(k=>
+    document.getElementById('st-'+k).classList.remove('on'));
+  const map={'':'all','قيد الانتظار':'wait','قيد المعالجة':'proc',
+             'جاهز':'done','تم التسليم':'deli','مرفوض':'rejc'};
+  document.getElementById('st-'+(map[s]||'all')).classList.add('on');
+  applyFilters();
+}
+
+function applyFilters(){
+  const q  = document.getElementById('srchQ').value.trim().toLowerCase();
+  const tp = document.getElementById('fltType').value;
+  const st = document.getElementById('fltStatus').value;
+
+  FILTERED = ALL.filter(r=>{
+    const mq = !q ||
+      (r.nameAr||'').toLowerCase().includes(q) ||
+      (r.nationalId||'').includes(q) ||
+      (r.requestNumber||'').toLowerCase().includes(q);
+    return mq && (!tp||r.requestType===tp) && (!st||r.status===st);
+  });
+
+  FILTERED.sort((a,b)=>{
+    const da=parseArabicDate(a.submittedAt);
+    const db=parseArabicDate(b.submittedAt);
+    return SORT_ASC ? da-db : db-da;
+  });
+
+  PAGE=1;
+  renderTable();
+}
+
+function parseArabicDate(str){
+  if(!str) return 0;
+  const d=new Date(str);
+  if(!isNaN(d)) return d.getTime();
+  return 0;
+}
+
+function toggleSort(){
+  SORT_ASC=!SORT_ASC;
+  document.getElementById('sortIco').textContent = SORT_ASC?'↑':'↓';
+  document.getElementById('sortLbl').textContent = SORT_ASC?'الأقدم أولاً':'الأحدث أولاً';
+  document.getElementById('sortBtn').classList.toggle('on',true);
+  applyFilters();
+}
+
+// ══════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════
+function renderRowThumb(url){
+  if (!url || !url.trim()) return '<span class="row-thumb-none">لا توجد</span>';
+  // ملاحظة: روابط Google Drive (file.getUrl()) مالهاش امتداد صورة في آخر الرابط،
+  // فمينفعش نعتمد على فحص الامتداد لتحديد هل الملف صورة أو لأ.
+  // بنحاول نعرضها كصورة دايمًا، ولو فشل التحميل (PDF فعلاً أو رابط باظ) بنرجع لأيقونة/رابط.
+  const src = driveView(url);
+  return `<img src="${src}" class="row-thumb" alt="إيصال"
+            onclick="openLightbox('${src}')"
+            onerror="this.outerHTML='<a href=\\'${url}\\' target=\\'_blank\\' class=\\'row-thumb-pdf\\' title=\\'تعذّر تحميل المعاينة — فتح الملف\\'>🔗</a>'">`;
+}
+
+function openLightbox(src){
+  const ov = document.getElementById('lightboxOv');
+  document.getElementById('lightboxImg').src = src;
+  ov.classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightboxOv').classList.remove('open');
+  document.getElementById('lightboxImg').src = '';
+}
+
+function renderTable(){
+  const tbody = document.getElementById('tbody');
+  const total = FILTERED.length;
+  document.getElementById('resCnt').textContent = 'عرض '+total+' طلب';
+
+  if(!total){ renderEmpty('لا توجد نتائج'); return; }
+
+  const start = (PAGE-1)*PG;
+  const rows  = FILTERED.slice(start, start+PG);
+
+  tbody.innerHTML = rows.map((r,i)=>{
+    const sc  = sClass(r.status);
+    const hasTrans = r.receiptUrlTranslated && r.receiptUrlTranslated.trim();
+    const pidx     = ALL.indexOf(r);
+    return `<tr>
+      <td style="color:var(--muted);font-size:.76rem;">${start+i+1}</td>
+      <td style="font-family:monospace;font-size:.75rem;color:var(--pr);">${r.requestNumber||'—'}</td>
+      <td><strong>${r.nameAr||'—'}</strong></td>
+      <td style="font-family:monospace;font-size:.76rem;direction:ltr;">${r.nationalId||'—'}</td>
+      <td style="font-size:.8rem;">${r.requestType||'—'}</td>
+      <td style="font-size:.79rem;">${r.receiptNo||'—'}</td>
+      <td>${renderRowThumb(r.receiptUrl)}</td>
+      <td style="text-align:center;">${r.count||'—'}</td>
+      <td style="font-size:.76rem;white-space:nowrap;">${r.submittedAt||'—'}</td>
+      <td style="font-size:.72rem;color:var(--muted);">${r.printedAt   ? '🖨️ '+r.printedAt   : '—'}</td>
+      <td style="font-size:.72rem;color:var(--muted);">${r.deliveredAt ? '📦 '+r.deliveredAt : '—'}</td>
+      <td><span class="sb ${sc}">${r.status||'قيد الانتظار'}</span></td>
+      <td>
+        <div class="acts">
+          <button class="ico-btn ib-v" title="عرض وتعديل"  onclick="openDetail(${pidx})">👁️</button>
+          <button class="ico-btn ib-p" title="طباعة"        onclick="quickPrint(${pidx})">🖨️</button>
+          ${hasTrans?`<button class="ico-btn ib-dl" title="تنزيل الترجمة" onclick="window.open('${r.receiptUrlTranslated}','_blank')">⬇️</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPag(total);
+}
+
+function renderEmpty(msg){
+  document.getElementById('tbody').innerHTML =
+    `<tr><td colspan="13" class="empty-cell"><span class="empty-ico">📭</span>${msg}</td></tr>`;
+  document.getElementById('pag').innerHTML='';
+}
+
+// ══════════════════════════════════════════
+//  PAGINATION
+// ══════════════════════════════════════════
+function renderPag(total){
+  const pages = Math.ceil(total/PG);
+  const bar   = document.getElementById('pag');
+  if(pages<=1){bar.innerHTML='';return;}
+
+  let h=`<span class="pag-info">صفحة ${PAGE} من ${pages} — إجمالي ${total}</span>`;
+  h+=`<button class="pn" onclick="goPage(1)" ${PAGE===1?'disabled':''}>«</button>`;
+  h+=`<button class="pn" onclick="goPage(${PAGE-1})" ${PAGE===1?'disabled':''}>‹</button>`;
+  for(let p=Math.max(1,PAGE-2);p<=Math.min(pages,PAGE+2);p++)
+    h+=`<button class="pn ${p===PAGE?'on':''}" onclick="goPage(${p})">${p}</button>`;
+  h+=`<button class="pn" onclick="goPage(${PAGE+1})" ${PAGE===pages?'disabled':''}>›</button>`;
+  h+=`<button class="pn" onclick="goPage(${pages})" ${PAGE===pages?'disabled':''}>»</button>`;
+  bar.innerHTML=h;
+}
+
+function goPage(p){
+  PAGE=p;
+  renderTable();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════
+//  DETAIL MODAL
+// ══════════════════════════════════════════
+function openDetail(idx){
+  CUR = ALL[idx];
+  const r = CUR;
+  document.getElementById('mTitle').textContent = 'طلب رقم ' + (r.requestNumber||'—');
+
+  const steps=[
+    {key:'قيد الانتظار', lbl:'⏳ قيد الانتظار', date:''},
+    {key:'قيد المعالجة', lbl:'⚙️ قيد المعالجة', date:''},
+    {key:'جاهز',         lbl:'🖨️ جاهز / مطبوع', date: r.printedAt||''},
+    {key:'تم التسليم',   lbl:'📦 تم التسليم',   date: r.deliveredAt||''},
+  ];
+  const statusOrder=['قيد الانتظار','قيد المعالجة','جاهز','تم التسليم'];
+  const curIdx = statusOrder.indexOf(r.status);
+  document.getElementById('statusTimeline').innerHTML = steps.map((s,i)=>{
+    const isDone = i < curIdx;
+    const isCurr = statusOrder[i]===r.status;
+    const isDeli = s.key==='تم التسليم' && r.status==='تم التسليم';
+    let cls = isDone?'done':isCurr?(isDeli?'deli':'curr'):'';
+    return `<div class="tl-step ${cls}">${s.lbl}${s.date?`<div class="tl-date">${s.date}</div>`:''}</div>`;
+  }).join('');
+
+  document.getElementById('detailGrid').innerHTML = `
+    <div class="di"><div class="di-lbl">اسم الطالب</div><div class="di-val">${r.nameAr||'—'}</div></div>
+    <div class="di"><div class="di-lbl">الاسم بالإنجليزية</div><div class="di-val" id="diNameEn" style="direction:ltr;text-align:right;">جارِ التحميل...</div></div>
+    <div class="di"><div class="di-lbl">الرقم القومي</div><div class="di-val" style="direction:ltr;font-family:monospace;">${r.nationalId||'—'}</div></div>
+    <div class="di"><div class="di-lbl">تاريخ الميلاد</div><div class="di-val">${formatDobFromNationalId(r.nationalId)||'—'}</div></div>
+    <div class="di"><div class="di-lbl">نوع الشهادة</div><div class="di-val">${r.requestType||'—'}</div></div>
+    <div class="di"><div class="di-lbl">رقم الإيصال</div><div class="di-val">${r.receiptNo||'—'}</div></div>
+    <div class="di"><div class="di-lbl">عدد النسخ</div><div class="di-val">${r.count||'—'}</div></div>
+    <div class="di"><div class="di-lbl">تاريخ التقديم</div><div class="di-val">${r.submittedAt||'—'}</div></div>
+    <div class="di"><div class="di-lbl">🖨️ تاريخ الطباعة</div><div class="di-val">${r.printedAt||'لم يُطبع بعد'}</div></div>
+    <div class="di"><div class="di-lbl">📦 تاريخ التسليم</div><div class="di-val">${r.deliveredAt||'لم يُسلَّم بعد'}</div></div>
+  `;
+
+  const rBox=document.getElementById('rcptBox');
+  const rActs=document.getElementById('rcptActs');
+  if(r.receiptUrl && r.receiptUrl.trim()){
+    // روابط Drive مالهاش امتداد صورة، فبنعرض كصورة دايمًا ونسيب onerror يتصرف لو مش صورة فعلاً
+    rBox.innerHTML = `<img src="${driveView(r.receiptUrl)}" alt="إيصال"
+             onerror="this.parentElement.innerHTML='<div class=no-img>تعذّر عرض الصورة — استخدم رابط الفتح أدناه</div>'">`;
+    document.getElementById('rcptOpen').href = r.receiptUrl;
+    document.getElementById('rcptDl').href   = r.receiptUrl;
+    rActs.style.display='flex';
+  } else {
+    rBox.innerHTML='<div class="no-img">لا توجد صورة إيصال</div>';
+    rActs.style.display='none';
+  }
+
+  const tSec=document.getElementById('transSection');
+  if(r.receiptUrlTranslated && r.receiptUrlTranslated.trim()){
+    tSec.style.display='block';
+    const tBox=document.getElementById('transBox');
+    const tActs=document.getElementById('transActs');
+    tBox.innerHTML = `<img src="${driveView(r.receiptUrlTranslated)}" alt="ترجمة"
+             onerror="this.parentElement.innerHTML='<div class=no-img>تعذّر عرض الصورة — استخدم رابط الفتح أدناه</div>'">`;
+    document.getElementById('transOpen').href = r.receiptUrlTranslated;
+    document.getElementById('transDl').href   = r.receiptUrlTranslated;
+    tActs.style.display='flex';
+  } else {
+    tSec.style.display='none';
+  }
+
+  document.getElementById('editStatus').value = r.status||'قيد الانتظار';
+  document.getElementById('editNotes').value  = r.notes ||'';
+  document.getElementById('detailOv').classList.add('open');
+
+  loadNameEn(r.nationalId);
+}
+
+// ══════════════════════════════════════════
+//  الاسم بالإنجليزية (من شيت الطلاب عبر getStudent)
+// ══════════════════════════════════════════
+const NAME_EN_CACHE = {};
+async function loadNameEn(nationalId){
+  const el = document.getElementById('diNameEn');
+  if (!nationalId){ el.textContent='—'; return; }
+
+  if (NAME_EN_CACHE[nationalId] !== undefined){
+    el.textContent = NAME_EN_CACHE[nationalId] || '—';
+    return;
+  }
+
+  try{
+    const res = await api('getStudent', { nationalId });
+    const nameEn = (res.found && res.data && res.data.name_en) ? res.data.name_en : '';
+    NAME_EN_CACHE[nationalId] = nameEn;
+    // لو المستخدم فتح تفاصيل طلب تاني قبل ما الرد يوصل، منحدّتش عنصر غلط
+    if (CUR && CUR.nationalId === nationalId){
+      el.textContent = nameEn || '—';
+    }
+  }catch(e){
+    if (CUR && CUR.nationalId === nationalId){
+      el.textContent = '—';
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+//  SAVE CHANGES
+// ══════════════════════════════════════════
+async function saveChanges(){
+  if(!CUR) return;
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div class="spin"></div> جاري...';
+  try{
+    const newStatus=document.getElementById('editStatus').value;
+    const newNotes =document.getElementById('editNotes').value;
+    await api('updateRequest',{requestNumber:CUR.requestNumber,status:newStatus,notes:newNotes});
+    const i=ALL.indexOf(CUR);
+    if(i>-1){ ALL[i].status=newStatus; ALL[i].notes=newNotes; CUR=ALL[i]; }
+    updateStats(); applyFilters();
+    toast('تم حفظ التغييرات ✅','ok');
+    closeOv('detailOv');
+  }catch(e){ toast('خطأ: '+e.message,'er'); }
+  finally{ btn.disabled=false; btn.innerHTML='💾 حفظ التغييرات'; }
+}
+
+// ══════════════════════════════════════════
+//  MARK DELIVERED
+// ══════════════════════════════════════════
+async function markDelivered(){
+  if(!CUR) return;
+  if(!confirm('هل تأكد تسليم هذا الطلب للطالب؟')) return;
+  const btn=document.getElementById('dlivBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div class="spin"></div> جاري...';
+  try{
+    const resp=await api('recordDelivery',{requestNumber:CUR.requestNumber});
+    const i=ALL.indexOf(CUR);
+    if(i>-1){ ALL[i].status='تم التسليم'; ALL[i].deliveredAt=resp.deliveredAt||'—'; CUR=ALL[i]; }
+    updateStats(); applyFilters();
+    toast('تم تسجيل التسليم بتاريخ '+CUR.deliveredAt+' 📦','ok');
+    closeOv('detailOv');
+  }catch(e){ toast('خطأ: '+e.message,'er'); }
+  finally{ btn.disabled=false; btn.innerHTML='📦 تسجيل التسليم'; }
+}
+
+// ══════════════════════════════════════════
+//  PRINT
+// ══════════════════════════════════════════
+async function quickPrint(idx){
+  CUR=ALL[idx];
+  await doPrint();
+}
+
+async function doPrint(){
+  if(!CUR) return;
+  const btn=document.getElementById('printBtn');
+  if(btn){ btn.disabled=true; btn.innerHTML='<div class="spin"></div> جاري الطباعة...'; }
+
+  let G = null;
+  try{
+    const resp=await api('getGraduateData',{nationalId:CUR.nationalId});
+    if(resp.found) G=resp.data;
+  }catch(e){}
+
+  buildPrintArea(CUR, G);
+
+  document.getElementById('detailOv').classList.remove('open');
+
+  await document.fonts.ready;
+  setTimeout(async ()=>{
+    window.print();
+    try{
+      const resp=await api('recordPrint',{requestNumber:CUR.requestNumber});
+      const i=ALL.indexOf(CUR);
+      if(i>-1){ ALL[i].status='جاهز'; ALL[i].printedAt=resp.printedAt||'—'; CUR=ALL[i]; }
+      updateStats(); applyFilters();
+      toast('تم تسجيل الطباعة وتحديث الحالة لـ "جاهز" ✅','ok');
+    }catch(e){ toast('تحذير: لم يُسجَّل تاريخ الطباعة تلقائياً','in'); }
+    if(btn){ btn.disabled=false; btn.innerHTML='🖨️ طباعة الشهادة'; }
+  }, 400);
+}
+
+// ── استخراج تاريخ الميلاد من الرقم القومي المصري ──
+// الرقم القومي 14 رقم: رقم1=القرن (2=19xx / 3=20xx), رقمين سنة, رقمين شهر, رقمين يوم
+function dobFromNationalId(nid) {
+  if (!nid) return null;
+  const s = String(nid).trim();
+  if (!/^\d{14}$/.test(s)) return null;
+
+  const centuryDigit = s[0];
+  const century = centuryDigit === '2' ? 1900 : centuryDigit === '3' ? 2000 : null;
+  if (!century) return null;
+
+  const yy = parseInt(s.substr(1,2), 10);
+  const mm = parseInt(s.substr(3,2), 10);
+  const dd = parseInt(s.substr(5,2), 10);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+
+  return { day: dd, month: mm, year: century + yy };
+}
+
+function formatDobFromNationalId(nid) {
+  const d = dobFromNationalId(nid);
+  return d ? (d.day + '-' + d.month + '-' + d.year) : '';
+}
+
+function formatDob(raw) {
+  if (!raw) return '';
+  // لو Date object من Apps Script
+  if (raw instanceof Date) {
+    return raw.getDate() + '-' + (raw.getMonth()+1) + '-' + raw.getFullYear();
+  }
+  const s = String(raw).trim();
+  if (!s) return '';
+
+  // صيغة yyyy-mm-dd أو yyyy/mm/dd
+  const m1 = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (m1) return parseInt(m1[3]) + '-' + parseInt(m1[2]) + '-' + m1[1];
+
+  // صيغة dd/mm/yyyy أو dd-mm-yyyy
+  const m2 = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if (m2) return parseInt(m2[1]) + '-' + parseInt(m2[2]) + '-' + m2[3];
+
+  // Serial number من Excel/Sheets (أرقام فقط)
+  if (/^\d{4,6}$/.test(s)) {
+    const d = new Date(Date.UTC(1899, 11, 30) + (parseInt(s) * 86400000));
+    if (!isNaN(d)) return d.getUTCDate() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCFullYear();
+  }
+
+  return s;
+}
+
+function formatAttempt(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+                  'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+  // لو Date object
+  if (raw instanceof Date) {
+    return months[raw.getMonth()] + ' ' + raw.getFullYear();
+  }
+
+  // صيغة yyyy-mm-dd أو yyyy/mm/dd
+  const m1 = s.match(/^(\d{4})[-\/](\d{1,2})[-\/]\d{1,2}/);
+  if (m1) return months[parseInt(m1[2])-1] + ' ' + m1[1];
+
+  // صيغة mm/yyyy أو mm-yyyy
+  const m2 = s.match(/^(\d{1,2})[-\/](\d{4})/);
+  if (m2) return months[parseInt(m2[1])-1] + ' ' + m2[2];
+
+  // Serial number
+  if (/^\d{4,6}$/.test(s)) {
+    const d = new Date(Date.UTC(1899, 11, 30) + (parseInt(s) * 86400000));
+    if (!isNaN(d)) return months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  }
+
+  // لو مكتوب كنص عادي — رجّعه زي ما هو
+  return s;
+}
+
+function buildPrintArea(r, G){
+  const name   = G?.name_ar     || '..........................................';
+  const natId  = G?.national_id || r.nationalId || '......................';
+  const dob    = formatDobFromNationalId(natId) || formatDob(G?.dob);
+  const addr   = G?.address     || '......................';
+  const dept   = G?.department  || '......................';
+  const grade  = G?.grade       || '......................';
+  const sys    = G?.study_system|| '......................';
+  const pct    = G?.percentage  || '......................';
+  const tot    = G?.total       || '......................';
+  const att    = formatAttempt(G?.attempt);
+  const dkol   = G?.council_date_college    || '......................';
+  const duniv  = G?.council_date_university || '......................';
+
+  const gender = (G?.gender || G?.sex || '').trim();
+  const isFemale = gender === 'أنثى' || gender === 'انثى' || gender === 'female';
+
+  const salutation = isFemale ? 'السيدة' : 'السيد';
+  const got        = isFemale ? 'حصلت'   : 'حصل';
+  const nationality= isFemale ? 'مصرية'  : 'مصري';
+
+  document.getElementById('printArea').innerHTML=`
+  <div class="cert-wrap">
+
+    <div class="cert-title">
+      تشهد كلية تكنولوجيا العلوم الصحية التطبيقية
+    </div>
+    <hr class="cert-title-sep">
+
+    <div class="c-line">
+      <span class="c-lbl">بأن ${salutation} / </span>
+      <span class="c-val">${name}</span>
+      <span class="c-lbl" style="margin-right:4mm;">الرقم القومي</span>
+      <span class="c-val-id">${natId}</span>
+    </div>
+
+    <div class="c-row2">
+      <div class="c-line">
+        <span class="c-lbl">تاريخ الميلاد :</span>
+        <span class="c-val">${dob}</span>
+      </div>
+      <div class="c-line">
+        <span class="c-lbl">الجنسية :</span>
+        <span class="c-val">${nationality}</span>
+      </div>
+    </div>
+
+    <div class="c-line">
+      <span class="c-lbl">محل الإقامة :</span>
+      <span class="c-val">${addr}</span>
+    </div>
+
+    <div class="c-degree">
+      ${got} على درجة بكالوريوس تكنولوجيا العلوم الصحية التطبيقية &nbsp;&mdash;&nbsp; جامعة بني سويف
+    </div>
+
+    <div class="c-row2">
+      <div class="c-line">
+        <span class="c-lbl">الدور :</span>
+        <span class="c-val">${att}</span>
+      </div>
+      <div class="c-line">
+        <span class="c-lbl">الشعبة / القسم :</span>
+        <span class="c-val">${dept}</span>
+      </div>
+    </div>
+
+    <div class="c-row2">
+      <div class="c-line">
+        <span class="c-lbl">نظام الدراسة :</span>
+        <span class="c-val">${sys}</span>
+      </div>
+      <div class="c-line">
+        <span class="c-lbl">التقدير :</span>
+        <span class="c-val">${grade}</span>
+      </div>
+    </div>
+
+    <div class="c-row2">
+      <div class="c-line">
+        <span class="c-lbl">المجموع :</span>
+        <span class="c-val">${tot}</span>
+      </div>
+      <div class="c-line">
+        <span class="c-lbl">النسبة المئوية :</span>
+        <span class="c-val">${pct}%</span>
+      </div>
+    </div>
+
+    <div class="c-row2">
+      <div class="c-line">
+        <span class="c-lbl">تاريخ منح مجلس الكلية :</span>
+        <span class="c-val">${dkol}</span>
+      </div>
+      <div class="c-line">
+        <span class="c-lbl">تاريخ منح مجلس الجامعة :</span>
+        <span class="c-val">${duniv}</span>
+      </div>
+    </div>
+
+    <div class="c-note">
+      قُدِّمت الشهادة بناءً على الطلب المقدم دون أدنى مسئولية على الكلية بما ورد وحقوق الغير.
+    </div>
+
+    
+<div class="c-sigs">
+  <div><strong>المختص</strong></div>
+  <div><strong>شئون الخريجين</strong></div>
+  <div><strong>وكيل الكلية لشئون التعليم والطلاب</strong><br><br>أ.د/ بكار عبد الحليم</div>
+  <div><strong>عميد الكلية</strong><br><br>أ.د/ الحسين دهشان</div>
+</div>
+
+<div class="c-travel">
+
+      <div class="c-travel-title">التوثيق الخاص بالسفر خارج البلاد</div>
+      <div class="c-travel-row">
+        <span class="c-travel-inline">شئون الخريجين بالإدارة العامة لشئون التعليم والطلاب</span>
+        <span class="c-travel-sep">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+        <span class="c-travel-inline">مدير عام الإدارة العامة لشئون التعليم والطلاب</span>
+      </div>
+    </div>
+
+  </div>
+  `;
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+loadAll();
+</script>
+<!-- ═══════ LIGHTBOX: معاينة سريعة للصورة ═══════ -->
+<div class="lightbox-ov" id="lightboxOv" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="event.stopPropagation();closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="معاينة" onclick="event.stopPropagation()">
+</div>
+
+</body>
+</html>
