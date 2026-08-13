@@ -610,7 +610,21 @@ tbody tr:hover td{background:rgba(0,180,216,.03);}
     <!-- Error message -->
     <div class="lp-err-msg" id="lpErrMsg">
       <span>⚠️</span>
-      <span>كلمة المرور غير صحيحة. يُرجى المحاولة مرة أخرى.</span>
+      <span id="lpErrText">بيانات الدخول غير صحيحة. يُرجى المحاولة مرة أخرى.</span>
+    </div>
+
+    <!-- Email field -->
+    <label class="lp-label" for="lpEmail">👤 &nbsp;البريد الإلكتروني</label>
+    <div class="lp-input-wrap">
+      <span class="lp-input-icon">✉️</span>
+      <input
+        type="email"
+        id="lpEmail"
+        class="lp-input"
+        placeholder="أدخل البريد الإلكتروني"
+        autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('lpPass').focus()"
+      >
     </div>
 
     <!-- Password field -->
@@ -622,7 +636,6 @@ tbody tr:hover td{background:rgba(0,180,216,.03);}
         id="lpPass"
         class="lp-input"
         placeholder="أدخل كلمة المرور"
-        maxlength="20"
         autocomplete="current-password"
         onkeydown="if(event.key==='Enter')lpLogin()"
       >
@@ -639,7 +652,7 @@ tbody tr:hover td{background:rgba(0,180,216,.03);}
     <div class="lp-footer">
       <div class="lp-footer-badge">
         <div class="lp-dot"></div>
-        النظام مُشفَّر ومحمي بكلمة مرور
+        النظام مُشفَّر ومحمي بتسجيل دخول حقيقي
       </div>
       <div class="lp-footer-name">شئون الخريجين — لوحة الإدارة</div>
     </div>
@@ -648,36 +661,14 @@ tbody tr:hover td{background:rgba(0,180,216,.03);}
 
 <script>
   (function(){
-    const PASS = '0000000';
+    // منطق تسجيل الدخول الفعلي (Firebase Authentication) معرّف لاحقاً
+    // في السكريبت الرئيسي (type="module") ويُعرَّض عبر window.__adminSignIn.
+    // الكود هنا مسؤول فقط عن واجهة الفورم (إظهار/إخفاء الباسورد، الرسائل).
     function lpLogin(){
-      const inp = document.getElementById('lpPass');
-      const err = document.getElementById('lpErrMsg');
-      const btn = document.getElementById('lpBtn');
-      const val = inp.value;
-      if(val === PASS){
-        btn.disabled = true;
-        document.getElementById('lpBtnTxt').textContent = 'جاري الدخول...';
-        document.getElementById('lpBtnArrow').innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:lp-spin .7s linear infinite;"></span>';
-        const style = document.createElement('style');
-        style.textContent = '@keyframes lp-spin{to{transform:rotate(360deg)}}';
-        document.head.appendChild(style);
-        // brief delay for UX feel
-        setTimeout(()=>{
-          document.getElementById('loginScreen').style.animation = 'lp-out .4s ease forwards';
-          const outSt = document.createElement('style');
-          outSt.textContent = '@keyframes lp-out{to{opacity:0;transform:scale(1.03)}}';
-          document.head.appendChild(outSt);
-          setTimeout(()=>{
-            document.getElementById('loginScreen').style.display = 'none';
-          }, 420);
-        }, 700);
-        err.classList.remove('show');
+      if (typeof window.__adminSignIn === 'function') {
+        window.__adminSignIn();
       } else {
-        err.classList.add('show');
-        inp.classList.add('error');
-        inp.value = '';
-        setTimeout(()=>inp.classList.remove('error'), 600);
-        inp.focus();
+        showLpError('النظام لسه بيتحمّل، من فضلك حاول بعد لحظة.');
       }
     }
 
@@ -688,12 +679,60 @@ tbody tr:hover td{background:rgba(0,180,216,.03);}
       else{inp.type='password';btn.textContent='👁';}
     }
 
-    window.lpLogin       = lpLogin;
-    window.lpToggleEye   = lpToggleEye;
+    function showLpError(msg){
+      const err = document.getElementById('lpErrMsg');
+      const errText = document.getElementById('lpErrText');
+      const pass = document.getElementById('lpPass');
+      if (msg) errText.textContent = msg;
+      err.classList.add('show');
+      pass.classList.add('error');
+      pass.value = '';
+      setTimeout(()=>pass.classList.remove('error'), 600);
+      pass.focus();
+    }
+
+    function setLpLoading(isLoading){
+      const btn = document.getElementById('lpBtn');
+      btn.disabled = isLoading;
+      if (isLoading) {
+        document.getElementById('lpBtnTxt').textContent = 'جاري الدخول...';
+        document.getElementById('lpBtnArrow').innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:lp-spin .7s linear infinite;"></span>';
+        const style = document.createElement('style');
+        style.textContent = '@keyframes lp-spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(style);
+      } else {
+        document.getElementById('lpBtnTxt').textContent = 'دخول إلى النظام';
+        document.getElementById('lpBtnArrow').textContent = '←';
+      }
+    }
+
+    function hideLoginScreen(){
+      const screen = document.getElementById('loginScreen');
+      if (!screen || screen.style.display === 'none') return;
+      screen.style.animation = 'lp-out .4s ease forwards';
+      const outSt = document.createElement('style');
+      outSt.textContent = '@keyframes lp-out{to{opacity:0;transform:scale(1.03)}}';
+      document.head.appendChild(outSt);
+      setTimeout(()=>{ screen.style.display = 'none'; }, 420);
+    }
+
+    function showLoginScreen(){
+      const screen = document.getElementById('loginScreen');
+      if (!screen) return;
+      screen.style.display = 'flex';
+      screen.style.animation = '';
+    }
+
+    window.lpLogin        = lpLogin;
+    window.lpToggleEye    = lpToggleEye;
+    window.__lpShowError  = showLpError;
+    window.__lpSetLoading = setLpLoading;
+    window.__lpHide       = hideLoginScreen;
+    window.__lpShow       = showLoginScreen;
 
     // auto-focus
     document.addEventListener('DOMContentLoaded',()=>{
-      setTimeout(()=>document.getElementById('lpPass').focus(),400);
+      setTimeout(()=>document.getElementById('lpEmail').focus(),400);
     });
   })();
 </script>
@@ -715,6 +754,7 @@ tbody tr:hover td{background:rgba(0,180,216,.03);}
     <div class="hdr-right">
       <button class="btn btn-out" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3);" onclick="openImportExport()">📁 استيراد / تصدير</button>
       <span class="badge-admin">🔐 لوحة الإدارة</span>
+      <button class="btn btn-out" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3);" onclick="if(window.__adminSignOut)window.__adminSignOut()">🚪 تسجيل خروج</button>
     </div>
   </div>
 </div>
@@ -917,6 +957,10 @@ import {
   getDatabase, ref, set, get, update, remove, push, serverTimestamp,
   query, orderByChild, equalTo
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+  setPersistence, browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAplBirpvzpUKfMCOPSp7-1JxMyrvCxEzI",
@@ -928,8 +972,53 @@ const firebaseConfig = {
   appId: "1:903790718920:web:048defd4818724b44d1afd"
 };
 
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+const app  = initializeApp(firebaseConfig);
+const db   = getDatabase(app);
+const auth = getAuth(app);
+
+// ─────────────────────────────────────────
+//  AUTHENTICATION — تسجيل دخول حقيقي بدل الباسورد المكشوف
+// ─────────────────────────────────────────
+// ملحوظة مهمة: التحقق الحقيقي بيحصل من جانب Firebase نفسه (بمقارنة
+// الباسورد المُشفَّر)، وقواعد قاعدة البيانات (database.rules.json) بقت
+// شرط "auth != null" على كل عمليات التعديل/الحذف الحساسة — يعني حتى
+// لو حد فتح الـ console وحاول ينادي الدوال مباشرة من غير ما يسجل دخول،
+// Firebase هيرفض الطلب من الأساس بغض النظر عن واجهة المستخدم.
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
+
+async function __adminSignIn() {
+  const email = (document.getElementById('lpEmail').value || '').trim();
+  const pass  = document.getElementById('lpPass').value || '';
+  if (!email || !pass) {
+    window.__lpShowError('من فضلك أدخل البريد الإلكتروني وكلمة المرور.');
+    return;
+  }
+  window.__lpSetLoading(true);
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged هيتكفل بإخفاء شاشة الدخول عند نجاح العملية
+  } catch (err) {
+    window.__lpSetLoading(false);
+    // رسالة عامة ومقصودة عدم تحديد إن كان الخطأ في الإيميل أو الباسورد
+    window.__lpShowError('بيانات الدخول غير صحيحة. يُرجى المحاولة مرة أخرى.');
+    console.error('Admin sign-in error:', err.code || err.message);
+  }
+}
+window.__adminSignIn = __adminSignIn;
+
+function __adminSignOut() {
+  signOut(auth).catch(()=>{});
+}
+window.__adminSignOut = __adminSignOut;
+
+onAuthStateChanged(auth, (user) => {
+  window.__lpSetLoading(false);
+  if (user) {
+    window.__lpHide();
+  } else {
+    window.__lpShow();
+  }
+});
 
 const NODE_STUDENTS  = 'students';
 const NODE_REQUESTS  = 'requests';
@@ -1202,7 +1291,10 @@ window.dispatchEvent(new Event('grad-firebase-api-ready'));
 // ══════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDmEGu_nRpJHlpxU-tbP7CsTklKaVzO4ifgSHsmy2MbftT7GgU-BJJOiXcrR-b8ar9/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxjbJPJbNI5yFwDxZQsyzPEirUkviplF6eIWtv9eUdb8DfaS0TIBp5it3NHZKWxm3P1hg/exec';
+// المفتاح السري لخدمة رفع الملفات — لازم يطابق UPLOAD_SECRET في Apps Script
+// Properties، ونفس القيمة الموجودة في students.html.
+const UPLOAD_TOKEN = '6-KHBkHhC39fsBNrYJkyDlk9SLKM0k4bmtHQFvnE_8o';
 
 // ══════════════════════════════════════════
 //  STATE
@@ -1226,7 +1318,7 @@ async function apiViaAppsScript(action, data={}) {
   try {
     r = await fetch(APPS_SCRIPT_URL, {
       method:'POST', headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({action,...data}),
+      body: JSON.stringify({action, token: UPLOAD_TOKEN, ...data}),
       signal: ctrl.signal,
       redirect: 'follow'
     });
